@@ -1,9 +1,5 @@
-﻿using System;
-using System.Threading;
-using System.Threading.Tasks;
-using Telegram.Bot;
+﻿using Telegram.Bot;
 using Telegram.Bot.Types;
-using Telegram.Bot.Exceptions;
 using Telegram.Bot.Polling;
 
 namespace Grain.IO.TGClient;
@@ -13,7 +9,7 @@ class Program
     //TODO
     private const string TOKEN = "TOKEN";
 
-    static ITelegramBotClient bot = new TelegramBotClient(TOKEN);
+    static readonly ITelegramBotClient bot = new TelegramBotClient(TOKEN);
     public static async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
         // Некоторые действия
@@ -21,25 +17,26 @@ class Program
         if (update.Type == Telegram.Bot.Types.Enums.UpdateType.Message)
         {
             var message = update.Message;
-            if (message.Text.ToLower() == "/start")
+            if (message.Text.Equals("/start", StringComparison.CurrentCultureIgnoreCase))
             {
-                await botClient.SendTextMessageAsync(message.Chat, "Добро пожаловать на борт, добрый путник!");
+                await botClient.SendTextMessageAsync(message.Chat, "Whisky notificator Grain.IO has started");
+                //TODO: add buttons
                 return;
             }
-            await botClient.SendTextMessageAsync(message.Chat, "Привет-привет!!");
+            //TODO : change
+            //await botClient.SendTextMessageAsync(message.Chat, "Привет-привет!!");
         }
     }
 
     public static async Task HandleErrorAsync(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken)
     {
-        // Некоторые действия
         Console.WriteLine(Newtonsoft.Json.JsonConvert.SerializeObject(exception));
     }
 
 
     static void Main(string[] args)
     {
-        Console.WriteLine("Запущен бот " + bot.GetMeAsync().Result.FirstName);
+        Console.WriteLine("Bot started " + bot.GetMeAsync().Result.FirstName);
 
         var cts = new CancellationTokenSource();
         var cancellationToken = cts.Token;

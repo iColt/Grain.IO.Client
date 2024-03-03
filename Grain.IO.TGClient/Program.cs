@@ -1,6 +1,8 @@
 ﻿using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Polling;
+using Microsoft.Extensions.DependencyInjection;
+using Grain.IO.TGClient.Handlers;
 
 namespace Grain.IO.TGClient;
 
@@ -9,22 +11,22 @@ class Program
     //TODO
     private const string TOKEN = "TOKEN";
 
+    private static IServiceProvider _serviceProvider;
+
     static readonly ITelegramBotClient bot = new TelegramBotClient(TOKEN);
     public static async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
-        // Некоторые действия
         Console.WriteLine(Newtonsoft.Json.JsonConvert.SerializeObject(update));
         if (update.Type == Telegram.Bot.Types.Enums.UpdateType.Message)
         {
+            //TODO: request per Context (where context ~ User)
             var message = update.Message;
             if (message.Text.Equals("/start", StringComparison.CurrentCultureIgnoreCase))
             {
-                await botClient.SendTextMessageAsync(message.Chat, "Whisky notificator Grain.IO has started");
-                //TODO: add buttons
+                //TODO: send context through container
+                _serviceProvider.GetRequiredService<IGeneralResponseHandler>().Handle(botClient, update, cancellationToken);
                 return;
             }
-            //TODO : change
-            //await botClient.SendTextMessageAsync(message.Chat, "Привет-привет!!");
         }
     }
 
@@ -33,9 +35,18 @@ class Program
         Console.WriteLine(Newtonsoft.Json.JsonConvert.SerializeObject(exception));
     }
 
+    private static ServiceProvider ConfigureServices()
+    {
+        var serviceProvider = new ServiceCollection()
+            .AddTransient<IGeneralResponseHandler, GeneralResponseHandler>();
+
+        return serviceProvider.BuildServiceProvider();
+    }
 
     static void Main(string[] args)
     {
+        _serviceProvider = ConfigureServices();
+
         Console.WriteLine("Bot started " + bot.GetMeAsync().Result.FirstName);
 
         var cts = new CancellationTokenSource();

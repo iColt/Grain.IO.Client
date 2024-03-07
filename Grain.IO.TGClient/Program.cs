@@ -1,40 +1,12 @@
-﻿using Telegram.Bot;
-using Telegram.Bot.Types;
-using Telegram.Bot.Polling;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Grain.IO.TGClient.Handlers;
+using Microsoft.Extensions.Configuration;
+using Grain.IO.TGClient.Models;
 
 namespace Grain.IO.TGClient;
 
 class Program
 {
-    //TODO
-    private const string TOKEN = "TOKEN";
-
-    private static IServiceProvider _serviceProvider;
-
-    static readonly ITelegramBotClient bot = new TelegramBotClient(TOKEN);
-    public static async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
-    {
-        Console.WriteLine(Newtonsoft.Json.JsonConvert.SerializeObject(update));
-        if (update.Type == Telegram.Bot.Types.Enums.UpdateType.Message)
-        {
-            //TODO: request per Context (where context ~ User)
-            var message = update.Message;
-            if (message.Text.Equals("/start", StringComparison.CurrentCultureIgnoreCase))
-            {
-                //TODO: send context through container
-                _serviceProvider.GetRequiredService<IGeneralResponseHandler>().Handle(botClient, update, cancellationToken);
-                return;
-            }
-        }
-    }
-
-    public static async Task HandleErrorAsync(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken)
-    {
-        Console.WriteLine(Newtonsoft.Json.JsonConvert.SerializeObject(exception));
-    }
-
     private static ServiceProvider ConfigureServices()
     {
         var serviceProvider = new ServiceCollection()
@@ -43,24 +15,25 @@ class Program
         return serviceProvider.BuildServiceProvider();
     }
 
-    static void Main(string[] args)
+    private static IConfigurationRoot BuildConfigurations()
     {
-        _serviceProvider = ConfigureServices();
+        return new ConfigurationBuilder()
+            .SetBasePath(Path.Combine(Directory.GetCurrentDirectory(), "Configs"))
+            .AddJsonFile(path: "appconfig.json", optional: false, reloadOnChange: true)
+            .Build();
+    }
 
-        Console.WriteLine("Bot started " + bot.GetMeAsync().Result.FirstName);
+    static void Main(string[] _)
+    {
+        var serviceProvider = ConfigureServices();
+        var config = BuildConfigurations();
 
-        var cts = new CancellationTokenSource();
-        var cancellationToken = cts.Token;
-        var receiverOptions = new ReceiverOptions
-        {
-            AllowedUpdates = { }, // receive all update types
-        };
-        bot.StartReceiving(
-            HandleUpdateAsync,
-            HandleErrorAsync,
-            receiverOptions,
-            cancellationToken
-        );
-        Console.ReadLine();
+        var configModel = new ConfigurationModel();
+        config.Bind(new ConfigurationModel());
+
+        //services.AddSingleton<IConfigurationModel>(configModel);
+
+        new Bootstraper().Initialize(serviceProvider);
+        //resolve Bootstraper
     }
 }

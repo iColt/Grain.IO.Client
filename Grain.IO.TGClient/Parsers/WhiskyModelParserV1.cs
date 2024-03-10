@@ -9,10 +9,10 @@ public class WhiskyModelParserV1
     private const string WHISKY_TABLE_ELEMENT_NAME = "//table[contains(@class, 'whiskytable') and contains(@class, 'table-clickable')"
                                                     +" and contains(@class, 'compositor') and contains(@class, 'table-sortable')]/tbody";
 
-    public static IList<WhiskyModel> Parse() {
+    public static IList<WhiskyModel> Parse(string url) {
         // Load HTML content from the URL
         HtmlWeb web = new();
-        HtmlDocument doc = web.Load(Constants.TestWhiskyBaseURL);
+        HtmlDocument doc = web.Load(url);
 
         // Select the table with the specified class name
         HtmlNode table = doc.DocumentNode.SelectSingleNode(WHISKY_TABLE_ELEMENT_NAME);

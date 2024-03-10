@@ -1,16 +1,24 @@
 ﻿using Grain.IO.TGClient.Handlers;
+using Grain.IO.TGClient.Models;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Telegram.Bot;
 using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
 
 namespace Grain.IO.TGClient;
 
-public class Bootstraper
+public class Bootstraper : IBootstraper
 {
-    private IServiceProvider _serviceProvider;
-
+    private readonly IServiceProvider _serviceProvider;
+    private readonly IOptions<IConfigurationModel> _configModel;
     private ITelegramBotClient _telegramBot;
+
+    public Bootstraper(IServiceProvider serviceProvider, IOptions<ConfigurationModel> configModel)
+    {
+        _serviceProvider = serviceProvider;
+        _configModel = configModel;
+    }
 
     public async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
@@ -33,10 +41,9 @@ public class Bootstraper
         Console.WriteLine(Newtonsoft.Json.JsonConvert.SerializeObject(exception));
     }
 
-    public void Initialize(IServiceProvider serviceProvider) {
-        _serviceProvider = serviceProvider;
-        //TODO:
-        _telegramBot = new TelegramBotClient("TOKEN");
+    public void Initialize()
+    {
+        _telegramBot = new TelegramBotClient(_configModel.Value.AuthToken);
 
         Console.WriteLine("Bot started " + _telegramBot.GetMeAsync().Result.FirstName);
 
@@ -52,6 +59,6 @@ public class Bootstraper
             receiverOptions,
             cancellationToken
         );
-        Console.ReadLine();
+
     }
 }

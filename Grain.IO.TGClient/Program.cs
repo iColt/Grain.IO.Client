@@ -2,15 +2,18 @@
 using Grain.IO.TGClient.Handlers;
 using Microsoft.Extensions.Configuration;
 using Grain.IO.TGClient.Models;
+using Grain.IO.TGClient.Common;
 
 namespace Grain.IO.TGClient;
 
 class Program
 {
-    private static ServiceProvider ConfigureServices()
+    private static ServiceProvider ConfigureServices(IConfigurationRoot configModel)
     {
         var serviceProvider = new ServiceCollection()
-            .AddTransient<IGeneralResponseHandler, GeneralResponseHandler>();
+            .AddTransient<IBootstraper, Bootstraper>()
+            .AddTransient<IGeneralResponseHandler, GeneralResponseHandler>()
+            .Configure<ConfigurationModel>(configModel.GetSection(Constants.AppSettings));
 
         return serviceProvider.BuildServiceProvider();
     }
@@ -25,15 +28,16 @@ class Program
 
     static void Main(string[] _)
     {
-        var serviceProvider = ConfigureServices();
         var config = BuildConfigurations();
 
         var configModel = new ConfigurationModel();
-        config.Bind(new ConfigurationModel());
+        config.Bind(configModel);
 
-        //services.AddSingleton<IConfigurationModel>(configModel);
+        var serviceProvider = ConfigureServices(config);
 
-        new Bootstraper().Initialize(serviceProvider);
-        //resolve Bootstraper
+        //Resolve bootstraper
+        serviceProvider.GetService<IBootstraper>().Initialize();
+
+        Console.ReadLine();
     }
 }
